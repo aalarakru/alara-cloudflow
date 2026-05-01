@@ -1,0 +1,16 @@
+source,target,capacity_mbps,description
+S,US,500,Internet traffic entering North American user zone
+S,EU,400,Internet traffic entering European user zone
+S,AS,350,Internet traffic entering Asian user zone
+US,LB1,300,North America requests routed to Load Balancer 1
+US,LB2,250,North America requests routed to Load Balancer 2
+EU,LB1,200,Europe requests routed to Load Balancer 1
+EU,LB2,250,Europe requests routed to Load Balancer 2
+AS,LB2,300,Asia requests routed to Load Balancer 2
+LB1,SC1,250,Load Balancer 1 distributes to Server Cluster 1
+LB1,SC2,200,Load Balancer 1 distributes to Server Cluster 2
+LB2,SC2,150,Load Balancer 2 distributes to Server Cluster 2
+LB2,SC3,300,Load Balancer 2 distributes to Server Cluster 3
+SC1,T,280,Server Cluster 1 sends processed data to Data Center Core
+SC2,T,320,Server Cluster 2 sends processed data to Data Center Core
+SC3,T,250,Server Cluster 3 sends processed data to Data Center Core
