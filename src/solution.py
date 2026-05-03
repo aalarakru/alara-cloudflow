@@ -82,6 +82,65 @@ def run_max_flow(G, source='S', sink='T'):
 
 
 # -----------------------------------------------------------------------------
+# STEP 3b: MIN-CUT ANALYSIS
+# -----------------------------------------------------------------------------
+# The Max-Flow Min-Cut theorem states that the maximum flow equals the capacity
+# of the minimum cut — the smallest set of edges whose removal disconnects S from T.
+# These are the true bottleneck edges of the network.
+
+def run_min_cut(G, source='S', sink='T'):
+    """
+    Find the minimum cut of the network.
+    Returns cut_value and the two partitions of nodes.
+    """
+    cut_value, (reachable, non_reachable) = nx.minimum_cut(G, source, sink)
+
+    print(f"\n{'='*55}")
+    print(f"  MIN-CUT ANALYSIS  (Max-Flow Min-Cut Theorem)")
+    print(f"{'='*55}")
+    print(f"  Min-Cut Value = {cut_value} Mbps  (equals Maximum Flow)")
+    print(f"  Source-side partition : {sorted(reachable)}")
+    print(f"  Sink-side partition   : {sorted(non_reachable)}")
+    print(f"\n  Cut edges (true bottlenecks):")
+    for u in reachable:
+        for v in non_reachable:
+            if G.has_edge(u, v):
+                cap = G[u][v]['capacity']
+                print(f"    {u} → {v}  |  capacity: {cap} Mbps")
+
+    return cut_value, reachable, non_reachable
+
+
+# -----------------------------------------------------------------------------
+# STEP 3c: SENSITIVITY ANALYSIS
+# -----------------------------------------------------------------------------
+# For each bottleneck edge, we estimate how much upgrading it by +50 Mbps
+# would increase the overall maximum flow.
+
+def sensitivity_analysis(G, flow_dict, flow_value, source='S', sink='T'):
+    """
+    For each saturated (bottleneck) edge, temporarily increase its capacity
+    by 50 Mbps and recompute max flow to see the gain.
+    """
+    print(f"\n{'='*55}")
+    print(f"  SENSITIVITY ANALYSIS  (+50 Mbps upgrade simulation)")
+    print(f"{'='*55}")
+    print(f"  {'Edge':<12} {'Current Cap':>12} {'New Flow':>10} {'Gain':>8}")
+    print(f"  {'-'*44}")
+
+    for u, v, data in G.edges(data=True):
+        flow = flow_dict.get(u, {}).get(v, 0)
+        if flow == data['capacity']:          # saturated edge
+            original_cap = data['capacity']
+            G[u][v]['capacity'] = original_cap + 50
+            new_flow, _ = nx.maximum_flow(G, source, sink)
+            gain = new_flow - flow_value
+            G[u][v]['capacity'] = original_cap   # restore
+            print(f"  {u}→{v:<8} {original_cap:>10} Mbps "
+                  f"{new_flow:>8} Mbps  +{gain} Mbps")
+
+
+# -----------------------------------------------------------------------------
 # STEP 4: VISUALIZE THE NETWORK
 # -----------------------------------------------------------------------------
 # We draw the network in layers to clearly show the flow path:
@@ -141,14 +200,20 @@ def visualize(G, flow_dict, flow_value, output_path='results/network_visualizati
         cap  = data['capacity']
         edge_labels[(u, v)] = f"{flow}/{cap}"
 
-    # Color saturated edges (flow = capacity) in red to highlight bottlenecks
+    # Color and thickness based on utilization %
+    # Green (low) → Yellow (medium) → Red (saturated bottleneck)
     edge_colors = []
+    edge_widths = []
     for u, v, data in G.edges(data=True):
         flow = flow_dict.get(u, {}).get(v, 0)
-        if flow == data['capacity']:
-            edge_colors.append('#e74c3c')   # saturated — bottleneck!
+        util = flow / data['capacity'] if data['capacity'] > 0 else 0
+        edge_widths.append(1.0 + util * 5.0)   # 1px (empty) to 6px (full)
+        if util == 1.0:
+            edge_colors.append('#e74c3c')   # red — fully saturated bottleneck
+        elif util >= 0.75:
+            edge_colors.append('#f39c12')   # orange — high utilization
         else:
-            edge_colors.append('#7f8c8d')   # has remaining capacity
+            edge_colors.append('#2ecc71')   # green — capacity available
 
     fig, ax = plt.subplots(figsize=(14, 10))
     fig.patch.set_facecolor('#f8f9fa')
@@ -162,7 +227,7 @@ def visualize(G, flow_dict, flow_value, output_path='results/network_visualizati
 
     # Draw edges
     nx.draw_networkx_edges(G, pos, edge_color=edge_colors, arrows=True,
-                           arrowsize=20, width=2.5, ax=ax,
+                           arrowsize=20, width=edge_widths, ax=ax,
                            connectionstyle='arc3,rad=0.08', alpha=0.85)
 
     # Draw edge labels
@@ -178,7 +243,9 @@ def visualize(G, flow_dict, flow_value, output_path='results/network_visualizati
         mpatches.Patch(color='#f39c12', label='Load Balancers — LB1 / LB2'),
         mpatches.Patch(color='#2ecc71', label='Server Clusters — SC1 / SC2 / SC3'),
         mpatches.Patch(color='#9b59b6', label='Sink — T (Data Center Core)'),
-        mpatches.Patch(color='#e74c3c', label='Red Edge = Bottleneck (fully saturated)'),
+        mpatches.Patch(color='#2ecc71', label='Green Edge = Low utilization (<75%)'),
+        mpatches.Patch(color='#f39c12', label='Orange Edge = High utilization (≥75%)'),
+        mpatches.Patch(color='#e74c3c', label='Red Edge = Bottleneck (100% saturated) — thicker = more flow'),
     ]
     ax.legend(handles=legend_elements, loc='upper left', fontsize=8,
               framealpha=0.9)
@@ -265,6 +332,9 @@ if __name__ == "__main__":
     print(f"\n{'='*55}")
     print(f"  MAXIMUM FLOW  =  {flow_val} Mbps")
     print(f"{'='*55}\n")
+
+    run_min_cut(G)
+    sensitivity_analysis(G, fd, flow_val)
 
     visualize(G, fd, flow_val, VIZ_PATH)
     save_results(flow_val, fd, G, OUT_PATH)

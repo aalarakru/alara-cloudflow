@@ -6,17 +6,17 @@ Maximum Throughput (Source → Sink): 820 Mbps
 
 Flow on Each Link:
 ----------------------------------------
-  S    → US   :  220 /  500 Mbps (44%)
-  S    → EU   :  300 /  400 Mbps (75%)
+  S    → US   :  370 /  500 Mbps (74%)
+  S    → EU   :  150 /  400 Mbps (38%)
   S    → AS   :  300 /  350 Mbps (86%)
-  US   → LB1  :  220 /  300 Mbps (73%)
-  US   → LB2  :    0 /  250 Mbps (0%)
-  EU   → LB1  :  200 /  200 Mbps (100%) ← BOTTLENECK
-  EU   → LB2  :  100 /  250 Mbps (40%)
+  US   → LB1  :  300 /  300 Mbps (100%) ← BOTTLENECK
+  US   → LB2  :   70 /  250 Mbps (28%)
+  EU   → LB1  :  150 /  200 Mbps (75%)
+  EU   → LB2  :    0 /  250 Mbps (0%)
   AS   → LB2  :  300 /  300 Mbps (100%) ← BOTTLENECK
   LB1  → SC1  :  250 /  250 Mbps (100%) ← BOTTLENECK
-  LB1  → SC2  :  170 /  200 Mbps (85%)
-  LB2  → SC2  :  150 /  150 Mbps (100%) ← BOTTLENECK
+  LB1  → SC2  :  200 /  200 Mbps (100%) ← BOTTLENECK
+  LB2  → SC2  :  120 /  150 Mbps (80%)
   LB2  → SC3  :  250 /  300 Mbps (83%)
   SC1  → T    :  250 /  280 Mbps (89%)
   SC2  → T    :  320 /  320 Mbps (100%) ← BOTTLENECK
